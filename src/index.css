@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --board: #17181a;
+  --board-panel: #1f2123;
+  --board-line: #2c2e31;
+  --amber: #d9a441;
+  --amber-dim: #a67f36;
+  --face: #efe9da;
+  --face-dim: #cfc9bb;
+  --ok: #3e8e5b;
+  --ok-bg: #223327;
+  --alert: #c1442e;
+  --alert-bg: #331f1c;
+  --text-primary: #f2efe6;
+  --text-muted: #9a9c9e;
+
+  --font-display: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+  --font-body: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--board);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px 48px;
+}
+
+@media (min-width: 480px) {
+  #root {
+    padding-top: 48px;
+  }
+}
+
+button {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
