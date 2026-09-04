@@ -8,7 +8,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
+      includeAssets: [
+        'favicon/favicon.ico',
+        'favicon/favicon-16x16.png',
+        'favicon/favicon-32x32.png',
+        'favicon/apple-touch-icon.png',
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+      ],
       manifest: {
         name: 'Rentabilidad de alquiler',
         short_name: 'Rentabilidad',
