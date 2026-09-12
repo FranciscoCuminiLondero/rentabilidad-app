@@ -9,7 +9,27 @@ export interface Propiedad {
   precio_compra: number;
   alquiler_mensual: number;
   dolar_venta: number;
+  // Fecha desde la que se empezó a alquilar (para calcular meses transcurridos
+  // en usePagos) y el % de rentabilidad previsto al momento de guardar la
+  // propiedad, para comparar después contra lo cobrado realmente. Ambos son
+  // opcionales porque propiedades guardadas antes de esta columna no los
+  // tienen cargados.
+  fecha_inicio_alquiler: string | null;
+  prevision_rentabilidad_anual: number | null;
   created_at: string;
+}
+
+// `prevision_rentabilidad_anual` no lo tipea el usuario en un formulario: lo
+// completa quien llama a guardar/actualizar con la rentabilidadAnual ya
+// calculada (ver calc.ts) al momento de guardar. Ambos campos son opcionales
+// acá para no romper a quien todavía guarda propiedades sin esta info.
+interface DatosPropiedad {
+  nombre: string;
+  precio_compra: number;
+  alquiler_mensual: number;
+  dolar_venta: number;
+  fecha_inicio_alquiler?: string | null;
+  prevision_rentabilidad_anual?: number | null;
 }
 
 export function useProperties(userId: string | undefined) {
@@ -35,12 +55,7 @@ export function useProperties(userId: string | undefined) {
     recargar();
   }, [recargar]);
 
-  async function guardar(propiedad: {
-    nombre: string;
-    precio_compra: number;
-    alquiler_mensual: number;
-    dolar_venta: number;
-  }): Promise<string | null> {
+  async function guardar(propiedad: DatosPropiedad): Promise<string | null> {
     if (!userId) return 'Tenés que iniciar sesión para guardar propiedades.';
 
     // El límite del plan free se valida también acá (no solo en la UI).
@@ -60,10 +75,20 @@ export function useProperties(userId: string | undefined) {
     return null;
   }
 
+  async function actualizar(
+    id: string,
+    datos: DatosPropiedad
+  ): Promise<string | null> {
+    const { error } = await supabase.from('properties').update(datos).eq('id', id);
+    if (error) return error.message;
+    await recargar();
+    return null;
+  }
+
   async function borrar(id: string) {
     await supabase.from('properties').delete().eq('id', id);
     await recargar();
   }
 
-  return { propiedades, cargando, guardar, borrar, recargar };
+  return { propiedades, cargando, guardar, actualizar, borrar, recargar };
 }
