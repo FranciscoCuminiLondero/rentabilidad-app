@@ -10,30 +10,43 @@ export function AuthForm({ onCancel }: AuthFormProps) {
   const [modo, setModo] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [mensaje, setMensaje] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [mensajeExito, setMensajeExito] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+
+  function limpiarMensajes() {
+    setError(null);
+    setMensajeExito(null);
+  }
+
+  function cambiarModo(nuevoModo: 'login' | 'signup') {
+    setModo(nuevoModo);
+    limpiarMensajes();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setMensaje(null);
+    limpiarMensajes();
     setEnviando(true);
 
-    const error =
+    const err =
       modo === 'login' ? await signIn(email, password) : await signUp(email, password);
 
     setEnviando(false);
 
-    if (error) {
-      setMensaje(error);
+    if (err) {
+      setError(err);
     } else if (modo === 'signup') {
-      setMensaje('Cuenta creada. Revisá tu email para confirmar (si tu proyecto lo requiere).');
+      setMensajeExito(
+        'Cuenta creada. Revisá tu email para confirmar (si tu proyecto lo requiere).'
+      );
     }
   }
 
   async function handleGoogle() {
-    setMensaje(null);
-    const error = await signInWithGoogle();
-    if (error) setMensaje(error);
+    limpiarMensajes();
+    const err = await signInWithGoogle();
+    if (err) setError(err);
   }
 
   return (
@@ -53,14 +66,14 @@ export function AuthForm({ onCancel }: AuthFormProps) {
         <button
           type="button"
           className={modo === 'login' ? 'auth-tab auth-tab--active' : 'auth-tab'}
-          onClick={() => setModo('login')}
+          onClick={() => cambiarModo('login')}
         >
           Ingresar
         </button>
         <button
           type="button"
           className={modo === 'signup' ? 'auth-tab auth-tab--active' : 'auth-tab'}
-          onClick={() => setModo('signup')}
+          onClick={() => cambiarModo('signup')}
         >
           Crear cuenta
         </button>
@@ -106,7 +119,10 @@ export function AuthForm({ onCancel }: AuthFormProps) {
           </div>
         </div>
 
-        {mensaje && <p className="dolar-meta dolar-meta--error">{mensaje}</p>}
+        {error && <p className="dolar-meta dolar-meta--error">{error}</p>}
+        {mensajeExito && (
+          <p className="dolar-meta dolar-meta--success">{mensajeExito}</p>
+        )}
 
         <button type="submit" className="primary-btn" disabled={enviando}>
           {enviando ? 'Un momento…' : modo === 'login' ? 'Ingresar' : 'Crear cuenta'}
