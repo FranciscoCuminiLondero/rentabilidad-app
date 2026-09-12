@@ -190,3 +190,124 @@
   margin-top: 16px;
   line-height: 1.5;
 }
+
+.primary-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid var(--amber-dim);
+  background: var(--amber);
+  color: #14110c;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-panel__tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--board-line);
+  background: var(--board);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-tab--active {
+  border-color: var(--amber-dim);
+  color: var(--face);
+}
+
+.google-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid var(--board-line);
+  background: var(--board);
+  color: var(--face);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+.google-btn:hover {
+  border-color: var(--amber-dim);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--board-line);
+}
+
+.save-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.saved-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.saved-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--board);
+  border: 1px solid var(--board-line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.saved-list__name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.saved-list__meta {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
