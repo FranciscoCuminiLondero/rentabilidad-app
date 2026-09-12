@@ -25,6 +25,7 @@ export default function App() {
   const [dolarManual, setDolarManual] = useState('');
   const [nombrePropiedad, setNombrePropiedad] = useState('');
   const [mensajeGuardado, setMensajeGuardado] = useState<string | null>(null);
+  const [mostrarAuthForm, setMostrarAuthForm] = useState(false);
 
   const { valorAutomatico, estado, recargar } = useDolarOficial();
   const { session, cargando: cargandoAuth, signOut } = useAuth();
@@ -268,8 +269,21 @@ export default function App() {
             </ul>
           )}
         </div>
+      ) : mostrarAuthForm ? (
+        <AuthForm onCancel={() => setMostrarAuthForm(false)} />
       ) : (
-        <AuthForm />
+        <div className="auth-prompt">
+          <p className="auth-prompt__text">
+            ¿Querés guardar esta propiedad? Iniciá sesión.
+          </p>
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={() => setMostrarAuthForm(true)}
+          >
+            Iniciar sesión / Crear cuenta
+          </button>
+        </div>
       )}
     </main>
   );

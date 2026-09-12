@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from './useAuth';
 
-export function AuthForm() {
+interface AuthFormProps {
+  onCancel?: () => void;
+}
+
+export function AuthForm({ onCancel }: AuthFormProps) {
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const [modo, setModo] = useState<'login' | 'signup'>('login');
   const [email, setEmail] = useState('');
@@ -34,6 +38,17 @@ export function AuthForm() {
 
   return (
     <div className="auth-panel">
+      {onCancel && (
+        <div className="save-section__header">
+          <span className="board__title" style={{ fontSize: 14 }}>
+            Iniciar sesión
+          </span>
+          <button type="button" className="link-btn" onClick={onCancel}>
+            Cancelar
+          </button>
+        </div>
+      )}
+
       <div className="auth-panel__tabs">
         <button
           type="button"

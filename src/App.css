@@ -275,6 +275,17 @@
   background: var(--board-line);
 }
 
+.auth-prompt {
+  text-align: center;
+}
+
+.auth-prompt__text {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
 .save-section__header {
   display: flex;
   align-items: center;
