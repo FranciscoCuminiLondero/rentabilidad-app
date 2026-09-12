@@ -2,6 +2,18 @@
 export const UMBRAL_RENTABILIDAD = 6;
 
 /**
+ * Limpia un string ingresado por el usuario (puntos como separador de
+ * miles, coma como separador decimal) y lo convierte a número. No aplica
+ * la heurística de "menor a 1000 = miles" de normalizarMonto: cada
+ * llamador decide si corresponde (un monto corto sí, una cotización no).
+ */
+export function parseInput(valor: string): number {
+  const limpio = valor.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(limpio);
+  return isNaN(n) ? 0 : n;
+}
+
+/**
  * Normaliza montos ingresados en formato corto.
  * Si el usuario escribe un número menor a 1000, se asume que quiso decir
  * "en miles" (ej: 47 -> 47000, 450 -> 450000). Si ya escribió el número
