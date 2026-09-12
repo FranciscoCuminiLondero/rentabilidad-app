@@ -4,6 +4,10 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Vercel no permite variables de entorno con el prefijo VITE_, así que además
+  // del prefijo por defecto aceptamos PUBLIC_ para poder cargar ahí las claves
+  // públicas de Supabase (ver src/supabaseClient.ts).
+  envPrefix: ['VITE_', 'PUBLIC_'],
   plugins: [
     react(),
     VitePWA({
