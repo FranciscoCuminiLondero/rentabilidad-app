@@ -80,10 +80,19 @@ export function HelpModal({ onClose }: HelpModalProps) {
           </div>
 
           <div className="help-section">
-            <p className="help-section__title">Plan gratuito</p>
+            <p className="help-section__title">Planes y precios</p>
             <p className="help-section__text">
-              Con la cuenta gratuita podés guardar hasta 2 propiedades. Para
-              guardar más habrá un plan pago (todavía no disponible).
+              {/* Precios y límites deben coincidir con PricingModal.tsx /
+                  useSubscription.ts. */}
+              Free es gratis y permite guardar hasta 2 propiedades, sin
+              seguimiento de pagos. Básico ($4.999/mes) sube el límite a 10
+              propiedades con seguimiento incluido, y Pro ($9.999/mes) no
+              tiene límite de propiedades guardadas.
+            </p>
+            <p className="help-section__text" style={{ marginTop: 6 }}>
+              Los planes pagos incluyen 7 días de prueba gratis antes del
+              primer cobro. Podés elegirlos o cambiarlos desde el botón
+              Mejorar plan en Mis propiedades.
             </p>
           </div>
 
@@ -94,6 +103,29 @@ export function HelpModal({ onClose }: HelpModalProps) {
             <p className="help-section__text">
               En la sección Mis propiedades, cada propiedad guardada tiene un
               ícono de lápiz (✎) para editarla y una cruz (✕) para borrarla.
+            </p>
+          </div>
+
+          <div className="help-section">
+            <p className="help-section__title">Fecha de inicio del alquiler</p>
+            <p className="help-section__text">
+              La necesitás para activar el seguimiento de pagos y comparar la
+              rentabilidad real contra la prevista. Si no la cargaste al
+              guardar la propiedad, podés agregarla después sin editar todo
+              el formulario: abrí la propiedad desde Mis propiedades y vas a
+              ver un botón para sumarla ahí mismo.
+            </p>
+          </div>
+
+          <div className="help-section">
+            <p className="help-section__title">
+              Registrar pagos de meses futuros
+            </p>
+            <p className="help-section__text">
+              No se puede: el cálculo usa la cotización del dólar del día de
+              cada pago, y todavía no existe la de un mes que no llegó. Solo
+              podés cargar pagos de meses ya transcurridos (incluido el
+              actual).
             </p>
           </div>
         </div>
