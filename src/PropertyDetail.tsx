@@ -14,6 +14,9 @@ import {
 interface PropertyDetailProps {
   propiedad: Propiedad;
   onClose: () => void;
+  // Parche puntual (solo fecha_inicio_alquiler) para no forzar a abrir el
+  // formulario completo de "editar propiedad" solo para cargar esta fecha.
+  onGuardarFechaInicio: (fecha: string) => Promise<string | null>;
 }
 
 function fechaHoyISO(): string {
@@ -23,14 +26,35 @@ function fechaHoyISO(): string {
   ).padStart(2, '0')}`;
 }
 
+// Último día del mes actual: tope del input de fecha de pago (día
+// completo, no solo el mes, para no bloquear pagos de días futuros dentro
+// del mes en curso).
+function finDeMesActualISO(): string {
+  const hoy = new Date();
+  const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  return `${ultimoDia.getFullYear()}-${String(ultimoDia.getMonth() + 1).padStart(
+    2,
+    '0'
+  )}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+}
+
 function numeroATexto(valor: number): string {
   return String(valor).replace('.', ',');
 }
 
-export function PropertyDetail({ propiedad, onClose }: PropertyDetailProps) {
+export function PropertyDetail({
+  propiedad,
+  onClose,
+  onGuardarFechaInicio,
+}: PropertyDetailProps) {
   const { buscarDolarOficial } = useDolarHistorico();
   const { pagos, registrarPago, actualizarPago, borrarPago, resumenAnual } =
     usePagos(propiedad.id);
+
+  const [agregandoFechaInicio, setAgregandoFechaInicio] = useState(false);
+  const [fechaInicioNueva, setFechaInicioNueva] = useState(fechaHoyISO());
+  const [guardandoFechaInicio, setGuardandoFechaInicio] = useState(false);
+  const [errorFechaInicio, setErrorFechaInicio] = useState<string | null>(null);
 
   const [fechaPago, setFechaPago] = useState(fechaHoyISO());
   const [montoArsTexto, setMontoArsTexto] = useState('');
@@ -73,6 +97,19 @@ export function PropertyDetail({ propiedad, onClose }: PropertyDetailProps) {
       cancelado = true;
     };
   }, [fechaPago, buscarDolarOficial]);
+
+  async function handleGuardarFechaInicio() {
+    setErrorFechaInicio(null);
+    setGuardandoFechaInicio(true);
+    const error = await onGuardarFechaInicio(fechaInicioNueva);
+    setGuardandoFechaInicio(false);
+
+    if (error) {
+      setErrorFechaInicio(error);
+    } else {
+      setAgregandoFechaInicio(false);
+    }
+  }
 
   function resetFormularioPago() {
     saltarProximoAutocompletado.current = false;
@@ -180,6 +217,51 @@ export function PropertyDetail({ propiedad, onClose }: PropertyDetailProps) {
             Inicio del alquiler: {propiedad.fecha_inicio_alquiler ?? 'no configurado'}
           </p>
 
+          {!propiedad.fecha_inicio_alquiler &&
+            (agregandoFechaInicio ? (
+              <div className="field" style={{ marginTop: 10 }}>
+                <div className="field__slot">
+                  <input
+                    type="date"
+                    value={fechaInicioNueva}
+                    onChange={(e) => setFechaInicioNueva(e.target.value)}
+                  />
+                </div>
+                {errorFechaInicio && (
+                  <p className="dolar-meta dolar-meta--error">{errorFechaInicio}</p>
+                )}
+                <div className="confirm-dialog__actions" style={{ marginTop: 8 }}>
+                  <button
+                    type="button"
+                    className="btn-small"
+                    onClick={() => {
+                      setAgregandoFechaInicio(false);
+                      setErrorFechaInicio(null);
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    disabled={guardandoFechaInicio}
+                    onClick={handleGuardarFechaInicio}
+                  >
+                    {guardandoFechaInicio ? 'Guardando…' : 'Guardar fecha'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="link-btn"
+                style={{ marginTop: 6 }}
+                onClick={() => setAgregandoFechaInicio(true)}
+              >
+                Agregar fecha de inicio de alquiler
+              </button>
+            ))}
+
           <div className="divider" />
 
           <div className="save-section__header">
@@ -207,10 +289,14 @@ export function PropertyDetail({ propiedad, onClose }: PropertyDetailProps) {
                   id="pago-fecha"
                   type="date"
                   required
+                  max={finDeMesActualISO()}
                   value={fechaPago}
                   onChange={(e) => setFechaPago(e.target.value)}
                 />
               </div>
+              <p className="dolar-meta">
+                Solo se pueden cargar pagos de meses ya transcurridos.
+              </p>
             </div>
 
             <div className="field">
@@ -384,9 +470,8 @@ export function PropertyDetail({ propiedad, onClose }: PropertyDetailProps) {
             )
           ) : (
             <p className="dolar-meta" style={{ marginTop: 10 }}>
-              Cargá la fecha de inicio del alquiler (editando la propiedad
-              desde Mis propiedades) para activar el seguimiento de
-              rentabilidad real.
+              Cargá la fecha de inicio del alquiler (arriba de todo, en esta
+              misma vista) para activar el seguimiento de rentabilidad real.
             </p>
           )}
         </div>
