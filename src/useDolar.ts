@@ -14,6 +14,14 @@ export type TipoDolar = 'oficial' | 'blue' | 'bolsa' | 'contadoconliqui';
 // no los pidió nadie y así el selector se mantiene chico.
 export const TIPOS_DOLAR: TipoDolar[] = ['oficial', 'blue', 'bolsa', 'contadoconliqui'];
 
+// Para filas de properties leídas antes de aplicar
+// supabase/schema-tipo-dolar.sql (la columna no existe todavía, o vino
+// null): cae a 'oficial' en vez de romper. Usar siempre esto al leer
+// tipo_dolar de la base, no el valor crudo.
+export function tipoDolarValido(valor: unknown): TipoDolar {
+  return (TIPOS_DOLAR as unknown[]).includes(valor) ? (valor as TipoDolar) : 'oficial';
+}
+
 export const NOMBRE_TIPO_DOLAR: Record<TipoDolar, string> = {
   oficial: 'Oficial',
   blue: 'Blue',

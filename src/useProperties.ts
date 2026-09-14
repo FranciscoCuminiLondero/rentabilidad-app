@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
-import type { TipoDolar } from './useDolar';
+import { tipoDolarValido, type TipoDolar } from './useDolar';
 
 export interface Propiedad {
   id: string;
@@ -61,7 +61,16 @@ export function useProperties(userId: string | undefined, limite: number) {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data) setPropiedades(data as Propiedad[]);
+    if (!error && data) {
+      // tipo_dolar puede venir null/ausente en filas leídas antes de
+      // aplicar supabase/schema-tipo-dolar.sql: se normaliza acá, en un
+      // solo lugar, en vez de que cada componente tenga que acordarse.
+      const propiedadesNormalizadas = (data as Propiedad[]).map((p) => ({
+        ...p,
+        tipo_dolar: tipoDolarValido(p.tipo_dolar),
+      }));
+      setPropiedades(propiedadesNormalizadas);
+    }
     setCargando(false);
   }, [userId]);
 
