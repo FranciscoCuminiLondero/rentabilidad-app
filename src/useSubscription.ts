@@ -82,7 +82,31 @@ export function useSubscription(userId: string | undefined) {
   // a correr) se asume 'free': nunca se deja pasar un límite de más por un
   // problema de lectura.
   const plan = suscripcion?.plan ?? 'free';
-  const limitePropiedades = LIMITE_POR_PLAN[plan];
 
-  return { suscripcion, plan, limitePropiedades, cargando, recargar };
+  // `plan` es el plan asignado, pero solo otorga sus beneficios mientras la
+  // suscripción esté realmente al día (trialing/active). Si Mercado Pago
+  // avisó 'past_due' (falló el cobro) o 'cancelled', el webhook actualiza
+  // el status pero deja el `plan` como quedó (no lo pisa a 'free'): sin
+  // este cálculo, alguien con la tarjeta rechazada seguiría teniendo el
+  // límite y el seguimiento de pagos del plan pago para siempre.
+  const suscripcionAlDia =
+    suscripcion != null &&
+    (suscripcion.status === 'trialing' || suscripcion.status === 'active');
+  const planEfectivo: Plan = suscripcionAlDia ? plan : 'free';
+
+  const limitePropiedades = LIMITE_POR_PLAN[planEfectivo];
+  const tieneSeguimientoPagos = planEfectivo !== 'free';
+
+  return {
+    suscripcion,
+    // `plan` es el nombre "de etiqueta" (para mostrar, ej. "Plan Básico ·
+    // Pago pendiente"). Para habilitar o restringir algo, usar siempre
+    // planEfectivo/limitePropiedades/tieneSeguimientoPagos.
+    plan,
+    planEfectivo,
+    limitePropiedades,
+    tieneSeguimientoPagos,
+    cargando,
+    recargar,
+  };
 }
