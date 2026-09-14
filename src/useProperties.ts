@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 
-export const LIMITE_PLAN_FREE = 2;
-
 export interface Propiedad {
   id: string;
   nombre: string;
@@ -32,7 +30,16 @@ interface DatosPropiedad {
   prevision_rentabilidad_anual?: number | null;
 }
 
-export function useProperties(userId: string | undefined) {
+// A diferencia de guardar (que inserta una fila nueva y necesita los campos
+// core), actualizar admite parches parciales: por ejemplo, cargar solo
+// fecha_inicio_alquiler sin tocar el resto (ver el botón "Agregar fecha de
+// inicio de alquiler" en PropertyDetail.tsx).
+type DatosActualizacionPropiedad = Partial<DatosPropiedad>;
+
+// `limite` viene de useSubscription (LIMITE_POR_PLAN según el plan real del
+// usuario): este hook no sabe nada de Mercado Pago ni de planes, solo
+// respeta el número que le pasan.
+export function useProperties(userId: string | undefined, limite: number) {
   const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
   const [cargando, setCargando] = useState(false);
 
@@ -58,11 +65,11 @@ export function useProperties(userId: string | undefined) {
   async function guardar(propiedad: DatosPropiedad): Promise<string | null> {
     if (!userId) return 'Tenés que iniciar sesión para guardar propiedades.';
 
-    // El límite del plan free se valida también acá (no solo en la UI).
-    // No reemplaza una validación server-side real, pero evita el caso
-    // más común de un usuario esquivando el límite desde la consola.
-    if (propiedades.length >= LIMITE_PLAN_FREE) {
-      return `Llegaste al límite de ${LIMITE_PLAN_FREE} propiedades del plan gratuito.`;
+    // El límite del plan se valida también acá (no solo en la UI). No
+    // reemplaza una validación server-side real, pero evita el caso más
+    // común de un usuario esquivando el límite desde la consola.
+    if (propiedades.length >= limite) {
+      return `Llegaste al límite de ${limite} propiedades de tu plan actual.`;
     }
 
     const { error } = await supabase.from('properties').insert({
@@ -77,7 +84,7 @@ export function useProperties(userId: string | undefined) {
 
   async function actualizar(
     id: string,
-    datos: DatosPropiedad
+    datos: DatosActualizacionPropiedad
   ): Promise<string | null> {
     const { error } = await supabase.from('properties').update(datos).eq('id', id);
     if (error) return error.message;
