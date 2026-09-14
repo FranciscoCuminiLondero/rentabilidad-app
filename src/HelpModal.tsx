@@ -54,11 +54,17 @@ export function HelpModal({ onClose }: HelpModalProps) {
           </div>
 
           <div className="help-section">
-            <p className="help-section__title">Dólar oficial · venta</p>
+            <p className="help-section__title">Dólar · venta</p>
             <p className="help-section__text">
-              Se completa solo con la cotización del momento. Si preferís
-              usar tu propio valor, tocá el ícono de lápiz (✎) e ingresalo
-              a mano.
+              Se completa solo con la cotización del momento, y podés elegir
+              entre oficial, blue, MEP o CCL con las pestañas de arriba. Si
+              preferís usar tu propio valor, tocá el ícono de lápiz (✎) e
+              ingresalo a mano.
+            </p>
+            <p className="help-section__text" style={{ marginTop: 6 }}>
+              El tipo que elijas al guardar una propiedad queda fijo para
+              ella: los pagos que registres después usan esa misma
+              cotización, para que el seguimiento sea consistente.
             </p>
           </div>
 
