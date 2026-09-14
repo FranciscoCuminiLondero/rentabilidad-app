@@ -19,6 +19,11 @@ create table if not exists public.subscriptions (
 alter table public.subscriptions enable row level security;
 
 -- El usuario solo puede LEER su propia fila.
+-- (drop primero: a diferencia de create table, create policy no admite
+-- "if not exists", así que sin esto el script no se puede volver a correr
+-- una vez aplicado.)
+drop policy if exists "subscriptions_select_own" on public.subscriptions;
+
 create policy "subscriptions_select_own"
   on public.subscriptions for select
   using (auth.uid() = user_id);
