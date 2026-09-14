@@ -60,6 +60,23 @@ function diasDesde(fechaISO: string): number {
   return Math.max(0, dias);
 }
 
+// El cálculo de rentabilidad usa la cotización del dólar del día del pago:
+// un pago de un mes que todavía no llegó no tiene una cotización real con
+// la que calcularlo. Se compara por año/mes, no por día completo: un pago
+// fechado más adelante dentro del mes actual sí es válido.
+function esMesFuturo(fechaISO: string): boolean {
+  const [anioStr, mesStr] = fechaISO.split('-');
+  const anio = Number(anioStr);
+  const mes = Number(mesStr);
+  if (!anio || !mes) return false;
+
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const mesActual = hoy.getMonth() + 1;
+
+  return anio > anioActual || (anio === anioActual && mes > mesActual);
+}
+
 export function usePagos(propertyId: string | undefined) {
   const [pagos, setPagos] = useState<PagoAlquiler[]>([]);
   const [cargando, setCargando] = useState(false);
@@ -89,6 +106,10 @@ export function usePagos(propertyId: string | undefined) {
       return 'No hay una propiedad seleccionada para registrar el pago.';
     }
 
+    if (esMesFuturo(pago.fecha)) {
+      return 'No se pueden registrar pagos de meses futuros: todavía no existe la cotización del dólar de ese mes.';
+    }
+
     const { error } = await supabase.from('pagos_alquiler').insert({
       property_id: propertyId,
       estado: 'pagado',
@@ -104,6 +125,10 @@ export function usePagos(propertyId: string | undefined) {
     id: string,
     datos: DatosPagoAlquiler
   ): Promise<string | null> {
+    if (esMesFuturo(datos.fecha)) {
+      return 'No se pueden registrar pagos de meses futuros: todavía no existe la cotización del dólar de ese mes.';
+    }
+
     const { error } = await supabase
       .from('pagos_alquiler')
       .update(datos)
