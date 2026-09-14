@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import './App.css';
-import { useDolarOficial } from './useDolarOficial';
+import {
+  NOMBRE_TIPO_DOLAR,
+  TIPOS_DOLAR,
+  useDolar,
+  type TipoDolar,
+} from './useDolar';
 import { useAuth } from './useAuth';
 import { AuthForm } from './AuthForm';
 import { HelpModal } from './HelpModal';
@@ -35,6 +40,7 @@ export default function App() {
   const [alquilerMensual, setAlquilerMensual] = useState('0');
   const [dolarManualActivo, setDolarManualActivo] = useState(false);
   const [dolarManual, setDolarManual] = useState('');
+  const [tipoDolar, setTipoDolar] = useState<TipoDolar>('oficial');
   const [nombrePropiedad, setNombrePropiedad] = useState('');
   const [fechaInicioAlquiler, setFechaInicioAlquiler] = useState('');
   const [mensajeGuardado, setMensajeGuardado] = useState<string | null>(null);
@@ -53,7 +59,8 @@ export default function App() {
     paso: 1 | 2;
   } | null>(null);
 
-  const { valorAutomatico, estado, recargar } = useDolarOficial();
+  const { cotizaciones, estado, recargar } = useDolar();
+  const valorAutomatico = cotizaciones?.[tipoDolar] ?? null;
   const { session, cargando: cargandoAuth, signOut } = useAuth();
   const { suscripcion, plan, limitePropiedades } = useSubscription(
     session?.user.id
@@ -98,6 +105,7 @@ export default function App() {
       precio_compra: resultado.precioCompraUSD,
       alquiler_mensual: resultado.alquilerMensualARS,
       dolar_venta: dolarVenta,
+      tipo_dolar: tipoDolar,
       fecha_inicio_alquiler: fechaInicioAlquiler || null,
       // No lo carga el usuario a mano: se completa con la rentabilidad
       // calculada en este mismo momento, para poder comparar más adelante
@@ -125,6 +133,7 @@ export default function App() {
     setAlquilerMensual(numeroAInput(p.alquiler_mensual));
     setDolarManualActivo(true);
     setDolarManual(numeroAInput(p.dolar_venta));
+    setTipoDolar(p.tipo_dolar);
     setFechaInicioAlquiler(p.fecha_inicio_alquiler ?? '');
     setEditandoId(p.id);
     setMensajeGuardado(null);
@@ -138,6 +147,7 @@ export default function App() {
     setAlquilerMensual('0');
     setDolarManualActivo(false);
     setDolarManual('');
+    setTipoDolar('oficial');
     setFechaInicioAlquiler('');
   }
 
@@ -242,8 +252,26 @@ export default function App() {
 
         <div className="field">
           <label className="field__label" htmlFor="dolar">
-            Dólar oficial · venta
+            Dólar · venta
           </label>
+
+          {!dolarManualActivo && (
+            <div className="auth-panel__tabs" style={{ marginBottom: 10 }}>
+              {TIPOS_DOLAR.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={
+                    tipoDolar === t ? 'auth-tab auth-tab--active' : 'auth-tab'
+                  }
+                  onClick={() => setTipoDolar(t)}
+                >
+                  {NOMBRE_TIPO_DOLAR[t]}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="dolar-row">
             <div className="field__slot">
               <span className="field__prefix">$</span>
@@ -306,7 +334,9 @@ export default function App() {
             </p>
           )}
           {!dolarManualActivo && estado === 'ok' && (
-            <p className="dolar-meta">Fuente: DolarAPI, dólar oficial</p>
+            <p className="dolar-meta">
+              Fuente: DolarAPI, dólar {NOMBRE_TIPO_DOLAR[tipoDolar].toLowerCase()}
+            </p>
           )}
         </div>
 
