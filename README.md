@@ -1,9 +1,9 @@
 # Rentabilidad de alquiler (PWA)
 
 App para calcular en segundos si un alquiler rinde: precio de compra en
-dólares, alquiler mensual en pesos, y el dólar oficial (venta) traído
-automáticamente desde [DolarAPI](https://dolarapi.com) (con opción de
-carga manual).
+dólares, alquiler mensual en pesos, y el dólar (venta) traído
+automáticamente desde [DolarAPI](https://dolarapi.com) — a elección entre
+oficial, blue, MEP o CCL (con opción de carga manual).
 
 - Si escribís `47` en "Precio de compra" se interpreta como `47.000`
   (y lo mismo para el alquiler). Si escribís el número completo, se
