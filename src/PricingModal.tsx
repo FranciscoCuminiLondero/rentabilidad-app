@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from './supabaseClient';
 import { NOMBRE_PLAN, type Plan } from './useSubscription';
+import { useDolar } from './useDolar';
 
 interface PricingModalProps {
   planActual: Plan;
@@ -10,14 +11,18 @@ interface PricingModalProps {
 type PlanPago = 'basico' | 'pro';
 
 // Deben coincidir con las constantes de
-// supabase/functions/crear-suscripcion/index.ts.
-const PRECIO_BASICO_ARS = 4999;
-const PRECIO_PRO_ARS = 9999;
+// supabase/functions/crear-suscripcion/index.ts: el precio real está fijado
+// en USD (no se desactualiza con la inflación) y se cobra en ARS al tipo de
+// cambio oficial del día que cada uno se suscribe. El monto en ARS que se
+// ve acá es una estimación con la cotización actual — el que realmente se
+// cobra se recalcula en el momento en crear-suscripcion.
+const PRECIO_BASICO_USD = 3;
+const PRECIO_PRO_USD = 7;
 const DIAS_PRUEBA_GRATIS = 7;
 
-const PRECIO_POR_PLAN: Record<PlanPago, number> = {
-  basico: PRECIO_BASICO_ARS,
-  pro: PRECIO_PRO_ARS,
+const PRECIO_USD_POR_PLAN: Record<PlanPago, number> = {
+  basico: PRECIO_BASICO_USD,
+  pro: PRECIO_PRO_USD,
 };
 
 const FEATURES_POR_PLAN: Record<PlanPago, string[]> = {
@@ -53,6 +58,8 @@ async function extraerMensajeError(error: unknown): Promise<string> {
 export function PricingModal({ planActual, onClose }: PricingModalProps) {
   const [enviando, setEnviando] = useState<PlanPago | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { cotizaciones } = useDolar();
+  const dolarOficial = cotizaciones?.oficial ?? null;
 
   async function handleElegirPlan(plan: PlanPago) {
     setError(null);
@@ -119,9 +126,16 @@ export function PricingModal({ planActual, onClose }: PricingModalProps) {
               <div className="plan-card__header">
                 <span className="plan-card__nombre">{NOMBRE_PLAN[id]}</span>
                 <span className="plan-card__precio">
-                  ${formatoPrecio(PRECIO_POR_PLAN[id])}/mes
+                  US$ {PRECIO_USD_POR_PLAN[id]}/mes
                 </span>
               </div>
+              <p className="dolar-meta" style={{ marginTop: -6, marginBottom: 8 }}>
+                {dolarOficial != null
+                  ? `≈ $${formatoPrecio(
+                      PRECIO_USD_POR_PLAN[id] * dolarOficial
+                    )} ARS al dólar oficial de hoy`
+                  : 'Se cobra en ARS al dólar oficial del día que te suscribís'}
+              </p>
               <ul className="plan-card__features">
                 {FEATURES_POR_PLAN[id].map((feature) => (
                   <li key={feature}>{feature}</li>

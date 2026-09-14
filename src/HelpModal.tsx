@@ -91,14 +91,16 @@ export function HelpModal({ onClose }: HelpModalProps) {
               {/* Precios y límites deben coincidir con PricingModal.tsx /
                   useSubscription.ts. */}
               Free es gratis y permite guardar hasta 2 propiedades, sin
-              seguimiento de pagos. Básico ($4.999/mes) sube el límite a 10
-              propiedades con seguimiento incluido, y Pro ($9.999/mes) no
+              seguimiento de pagos. Básico (USD 3/mes) sube el límite a 10
+              propiedades con seguimiento incluido, y Pro (USD 7/mes) no
               tiene límite de propiedades guardadas.
             </p>
             <p className="help-section__text" style={{ marginTop: 6 }}>
-              Los planes pagos incluyen 7 días de prueba gratis antes del
-              primer cobro. Podés elegirlos o cambiarlos desde el botón
-              Mejorar plan en Mis propiedades.
+              Los planes pagos se cobran en pesos, convertidos al dólar
+              oficial del día en que te suscribís (así el precio no se
+              desactualiza con la inflación), e incluyen 7 días de prueba
+              gratis antes del primer cobro. Podés elegirlos o cambiarlos
+              desde el botón Mejorar plan en Mis propiedades.
             </p>
           </div>
 
