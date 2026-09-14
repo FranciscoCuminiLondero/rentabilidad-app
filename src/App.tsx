@@ -6,7 +6,14 @@ import { AuthForm } from './AuthForm';
 import { HelpModal } from './HelpModal';
 import { PropertyDetail } from './PropertyDetail';
 import { ConfirmDialog } from './ConfirmDialog';
-import { LIMITE_PLAN_FREE, useProperties, type Propiedad } from './useProperties';
+import { PricingModal } from './PricingModal';
+import { useProperties, type Propiedad } from './useProperties';
+import {
+  formatoEstadoSuscripcion,
+  formatoLimite,
+  NOMBRE_PLAN,
+  useSubscription,
+} from './useSubscription';
 import {
   UMBRAL_RENTABILIDAD,
   calcularRentabilidad,
@@ -34,6 +41,7 @@ export default function App() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [mostrarAuthForm, setMostrarAuthForm] = useState(false);
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
+  const [mostrarPlanes, setMostrarPlanes] = useState(false);
   const [propiedadDetalleId, setPropiedadDetalleId] = useState<string | null>(
     null
   );
@@ -47,8 +55,12 @@ export default function App() {
 
   const { valorAutomatico, estado, recargar } = useDolarOficial();
   const { session, cargando: cargandoAuth, signOut } = useAuth();
-  const { propiedades, guardar, actualizar, borrar } = useProperties(
+  const { suscripcion, plan, limitePropiedades } = useSubscription(
     session?.user.id
+  );
+  const { propiedades, guardar, actualizar, borrar } = useProperties(
+    session?.user.id,
+    limitePropiedades
   );
 
   const propiedadDetalle =
@@ -147,9 +159,12 @@ export default function App() {
         </div>
       ) : session ? (
         <div className="account-bar">
-          <span className="account-bar__status" title={session.user.email}>
-            {session.user.email ?? 'Cuenta conectada'}
-          </span>
+          <div className="account-bar__identity">
+            <span className="account-bar__status" title={session.user.email}>
+              {session.user.email ?? 'Cuenta conectada'}
+            </span>
+            <span className="plan-badge">{NOMBRE_PLAN[plan]}</span>
+          </div>
           <div className="account-bar__actions">
             <button
               type="button"
@@ -382,7 +397,8 @@ export default function App() {
               type="button"
               className="primary-btn"
               disabled={
-                !hayDatos || (!editandoId && propiedades.length >= LIMITE_PLAN_FREE)
+                !hayDatos ||
+                (!editandoId && propiedades.length >= limitePropiedades)
               }
               onClick={handleGuardar}
             >
@@ -393,7 +409,8 @@ export default function App() {
 
             {!editandoId && (
               <p className="dolar-meta">
-                {propiedades.length}/{LIMITE_PLAN_FREE} propiedades del plan gratuito
+                {propiedades.length}/{formatoLimite(limitePropiedades)} propiedades
+                de tu plan
               </p>
             )}
           </div>
@@ -420,8 +437,21 @@ export default function App() {
               Mis propiedades
             </span>
             <span className="dolar-meta" style={{ marginTop: 0 }}>
-              {propiedades.length}/{LIMITE_PLAN_FREE}
+              {propiedades.length}/{formatoLimite(limitePropiedades)}
             </span>
+          </div>
+
+          <div className="save-section__header">
+            <span className="dolar-meta" style={{ marginTop: 0 }}>
+              {formatoEstadoSuscripcion(suscripcion)}
+            </span>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => setMostrarPlanes(true)}
+            >
+              {plan === 'pro' ? 'Ver planes' : 'Mejorar plan'}
+            </button>
           </div>
 
           {propiedades.length === 0 ? (
@@ -481,10 +511,22 @@ export default function App() {
 
       {mostrarAyuda && <HelpModal onClose={() => setMostrarAyuda(false)} />}
 
+      {mostrarPlanes && session && (
+        <PricingModal
+          userId={session.user.id}
+          email={session.user.email ?? ''}
+          planActual={plan}
+          onClose={() => setMostrarPlanes(false)}
+        />
+      )}
+
       {propiedadDetalle && (
         <PropertyDetail
           propiedad={propiedadDetalle}
           onClose={() => setPropiedadDetalleId(null)}
+          onGuardarFechaInicio={(fecha) =>
+            actualizar(propiedadDetalle.id, { fecha_inicio_alquiler: fecha })
+          }
         />
       )}
 
