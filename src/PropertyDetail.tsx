@@ -17,6 +17,11 @@ interface PropertyDetailProps {
   // Parche puntual (solo fecha_inicio_alquiler) para no forzar a abrir el
   // formulario completo de "editar propiedad" solo para cargar esta fecha.
   onGuardarFechaInicio: (fecha: string) => Promise<string | null>;
+  // El seguimiento de pagos es exclusivo de los planes pagos (Básico/Pro):
+  // sin esto, cualquier usuario Free podía registrar y analizar pagos sin
+  // límite, que era justo la feature que se supone que vende el plan pago.
+  tieneSeguimiento: boolean;
+  onVerPlanes: () => void;
 }
 
 function fechaHoyISO(): string {
@@ -46,6 +51,8 @@ export function PropertyDetail({
   propiedad,
   onClose,
   onGuardarFechaInicio,
+  tieneSeguimiento,
+  onVerPlanes,
 }: PropertyDetailProps) {
   const { buscarDolarHistorico } = useDolar();
   const { pagos, registrarPago, actualizarPago, borrarPago, resumenAnual } =
@@ -271,215 +278,229 @@ export function PropertyDetail({
 
           <div className="divider" />
 
-          <div className="save-section__header">
-            <span className="board__title" style={{ fontSize: 14 }}>
-              {editandoPagoId ? 'Editar pago' : 'Registrar pago'}
-            </span>
-            {editandoPagoId && (
-              <button
-                type="button"
-                className="link-btn"
-                onClick={resetFormularioPago}
-              >
-                Cancelar edición
+          {!tieneSeguimiento ? (
+            <div className="auth-prompt">
+              <p className="auth-prompt__text">
+                El seguimiento de pagos y el análisis de rentabilidad real
+                son parte de los planes Básico y Pro.
+              </p>
+              <button type="button" className="primary-btn" onClick={onVerPlanes}>
+                Ver planes
               </button>
-            )}
-          </div>
-
-          <form onSubmit={handleSubmitPago}>
-            <div className="field">
-              <label className="field__label" htmlFor="pago-fecha">
-                Fecha
-              </label>
-              <div className="field__slot">
-                <input
-                  id="pago-fecha"
-                  type="date"
-                  required
-                  max={finDeMesActualISO()}
-                  value={fechaPago}
-                  onChange={(e) => setFechaPago(e.target.value)}
-                />
-              </div>
-              <p className="dolar-meta">
-                Solo se pueden cargar pagos de meses ya transcurridos.
-              </p>
             </div>
-
-            <div className="field">
-              <label className="field__label" htmlFor="pago-monto">
-                Monto cobrado (ARS)
-              </label>
-              <div className="field__slot">
-                <span className="field__prefix">$</span>
-                <input
-                  id="pago-monto"
-                  inputMode="decimal"
-                  required
-                  placeholder="450.000"
-                  value={montoArsTexto}
-                  onChange={(e) => setMontoArsTexto(e.target.value)}
-                />
-              </div>
-              <p className="footer-note" style={{ marginTop: 6 }}>
-                450 se interpreta como 450.000. Escribí el número completo si
-                querés un valor distinto.
-              </p>
-            </div>
-
-            <div className="field">
-              <label className="field__label" htmlFor="pago-dolar">
-                Dólar del día
-              </label>
-              <div className="field__slot">
-                <span className="field__prefix">$</span>
-                <input
-                  id="pago-dolar"
-                  inputMode="decimal"
-                  required
-                  value={dolarDiaTexto}
-                  onChange={(e) => setDolarDiaTexto(e.target.value)}
-                />
-              </div>
-              {cargandoDolarDia && (
-                <p className="dolar-meta">Buscando cotización de esa fecha…</p>
+          ) : (
+            <>
+            <div className="save-section__header">
+              <span className="board__title" style={{ fontSize: 14 }}>
+                {editandoPagoId ? 'Editar pago' : 'Registrar pago'}
+              </span>
+              {editandoPagoId && (
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={resetFormularioPago}
+                >
+                  Cancelar edición
+                </button>
               )}
             </div>
 
-            <div className="field">
-              <label className="field__label" htmlFor="pago-estado">
-                Estado
-              </label>
-              <div className="field__slot">
-                <select
-                  id="pago-estado"
-                  value={estadoPago}
-                  onChange={(e) => setEstadoPago(e.target.value as EstadoPago)}
-                >
-                  <option value="pagado">Pagado</option>
-                  <option value="atrasado">Atrasado</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="field">
-              <label className="field__label" htmlFor="pago-nota">
-                Nota (opcional)
-              </label>
-              <div className="field__slot">
-                <input
-                  id="pago-nota"
-                  maxLength={140}
-                  placeholder="Ej: pagó con 3 días de atraso"
-                  value={nota}
-                  onChange={(e) => setNota(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {mensajePago && <p className="dolar-meta dolar-meta--error">{mensajePago}</p>}
-
-            <button type="submit" className="primary-btn" disabled={enviandoPago}>
-              {enviandoPago
-                ? 'Un momento…'
-                : editandoPagoId
-                ? 'Actualizar pago'
-                : 'Registrar pago'}
-            </button>
-          </form>
-
-          <div className="divider" />
-
-          <span className="board__title" style={{ fontSize: 14 }}>
-            Pagos registrados
-          </span>
-
-          {pagos.length === 0 ? (
-            <p className="dolar-meta">Todavía no registraste pagos.</p>
-          ) : (
-            <ul className="saved-list">
-              {pagos.map((p) => (
-                <li key={p.id} className="saved-list__item">
-                  <div>
-                    <div className="saved-list__name">
-                      {p.fecha} ·{' '}
-                      <span className={p.estado === 'pagado' ? 'dolar-meta--success' : 'dolar-meta--error'}>
-                        {p.estado === 'pagado' ? 'Pagado' : 'Atrasado'}
-                      </span>
-                    </div>
-                    <div className="saved-list__meta">
-                      ${formatoARS(p.monto_ars)} · US${' '}
-                      {formatoUSD(p.dolar_dia > 0 ? p.monto_ars / p.dolar_dia : 0)}
-                      {p.nota ? ` · ${p.nota}` : ''}
-                    </div>
-                  </div>
-                  <div className="saved-list__actions">
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      title="Editar"
-                      onClick={() => handleEditarPago(p)}
-                    >
-                      ✎
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      title="Borrar"
-                      onClick={() => setConfirmandoBorradoPagoId(p.id)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="divider" />
-
-          <span className="board__title" style={{ fontSize: 14 }}>
-            Análisis
-          </span>
-
-          {resumen ? (
-            resumen.suficienteHistorial ? (
-              <div className={'result ' + claseResultado} style={{ marginTop: 14 }}>
-                <div className="result__label">
-                  {cumplioAnio
-                    ? 'Rentabilidad real (año cumplido)'
-                    : 'Rentabilidad real hasta ahora'}
+            <form onSubmit={handleSubmitPago}>
+              <div className="field">
+                <label className="field__label" htmlFor="pago-fecha">
+                  Fecha
+                </label>
+                <div className="field__slot">
+                  <input
+                    id="pago-fecha"
+                    type="date"
+                    required
+                    max={finDeMesActualISO()}
+                    value={fechaPago}
+                    onChange={(e) => setFechaPago(e.target.value)}
+                  />
                 </div>
-                <div className="result__value">
-                  {formatoPorcentaje(resumen.rentabilidadRealAnualizada ?? 0)}%
+                <p className="dolar-meta">
+                  Solo se pueden cargar pagos de meses ya transcurridos.
+                </p>
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="pago-monto">
+                  Monto cobrado (ARS)
+                </label>
+                <div className="field__slot">
+                  <span className="field__prefix">$</span>
+                  <input
+                    id="pago-monto"
+                    inputMode="decimal"
+                    required
+                    placeholder="450.000"
+                    value={montoArsTexto}
+                    onChange={(e) => setMontoArsTexto(e.target.value)}
+                  />
                 </div>
-                <div className="result__threshold">{textoComparacion}</div>
-                <div className="result__usd">
-                  Cobrado hasta ahora: US$ {formatoUSD(resumen.totalCobradoUSD)} ·{' '}
-                  {Math.floor(resumen.mesesTranscurridos)} meses transcurridos
-                  {resumen.pagosAtrasados > 0 &&
-                    ` · ${resumen.pagosAtrasados} pago(s) atrasado(s)`}
+                <p className="footer-note" style={{ marginTop: 6 }}>
+                  450 se interpreta como 450.000. Escribí el número completo si
+                  querés un valor distinto.
+                </p>
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="pago-dolar">
+                  Dólar del día
+                </label>
+                <div className="field__slot">
+                  <span className="field__prefix">$</span>
+                  <input
+                    id="pago-dolar"
+                    inputMode="decimal"
+                    required
+                    value={dolarDiaTexto}
+                    onChange={(e) => setDolarDiaTexto(e.target.value)}
+                  />
+                </div>
+                {cargandoDolarDia && (
+                  <p className="dolar-meta">Buscando cotización de esa fecha…</p>
+                )}
+              </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="pago-estado">
+                  Estado
+                </label>
+                <div className="field__slot">
+                  <select
+                    id="pago-estado"
+                    value={estadoPago}
+                    onChange={(e) => setEstadoPago(e.target.value as EstadoPago)}
+                  >
+                    <option value="pagado">Pagado</option>
+                    <option value="atrasado">Atrasado</option>
+                  </select>
                 </div>
               </div>
+
+              <div className="field">
+                <label className="field__label" htmlFor="pago-nota">
+                  Nota (opcional)
+                </label>
+                <div className="field__slot">
+                  <input
+                    id="pago-nota"
+                    maxLength={140}
+                    placeholder="Ej: pagó con 3 días de atraso"
+                    value={nota}
+                    onChange={(e) => setNota(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {mensajePago && <p className="dolar-meta dolar-meta--error">{mensajePago}</p>}
+
+              <button type="submit" className="primary-btn" disabled={enviandoPago}>
+                {enviandoPago
+                  ? 'Un momento…'
+                  : editandoPagoId
+                  ? 'Actualizar pago'
+                  : 'Registrar pago'}
+              </button>
+            </form>
+
+            <div className="divider" />
+
+            <span className="board__title" style={{ fontSize: 14 }}>
+              Pagos registrados
+            </span>
+
+            {pagos.length === 0 ? (
+              <p className="dolar-meta">Todavía no registraste pagos.</p>
             ) : (
-              <div className="result result--empty" style={{ marginTop: 14 }}>
-                <div className="result__label">Rentabilidad real hasta ahora</div>
-                <div className="result__value">—</div>
-                <div className="result__threshold">
-                  Necesitás al menos un mes de historial para calcular la
-                  rentabilidad real de forma confiable. Volvé a revisar esto
-                  más adelante.
+              <ul className="saved-list">
+                {pagos.map((p) => (
+                  <li key={p.id} className="saved-list__item">
+                    <div>
+                      <div className="saved-list__name">
+                        {p.fecha} ·{' '}
+                        <span className={p.estado === 'pagado' ? 'dolar-meta--success' : 'dolar-meta--error'}>
+                          {p.estado === 'pagado' ? 'Pagado' : 'Atrasado'}
+                        </span>
+                      </div>
+                      <div className="saved-list__meta">
+                        ${formatoARS(p.monto_ars)} · US${' '}
+                        {formatoUSD(p.dolar_dia > 0 ? p.monto_ars / p.dolar_dia : 0)}
+                        {p.nota ? ` · ${p.nota}` : ''}
+                      </div>
+                    </div>
+                    <div className="saved-list__actions">
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Editar"
+                        onClick={() => handleEditarPago(p)}
+                      >
+                        ✎
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-btn"
+                        title="Borrar"
+                        onClick={() => setConfirmandoBorradoPagoId(p.id)}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="divider" />
+
+            <span className="board__title" style={{ fontSize: 14 }}>
+              Análisis
+            </span>
+
+            {resumen ? (
+              resumen.suficienteHistorial ? (
+                <div className={'result ' + claseResultado} style={{ marginTop: 14 }}>
+                  <div className="result__label">
+                    {cumplioAnio
+                      ? 'Rentabilidad real (año cumplido)'
+                      : 'Rentabilidad real hasta ahora'}
+                  </div>
+                  <div className="result__value">
+                    {formatoPorcentaje(resumen.rentabilidadRealAnualizada ?? 0)}%
+                  </div>
+                  <div className="result__threshold">{textoComparacion}</div>
+                  <div className="result__usd">
+                    Cobrado hasta ahora: US$ {formatoUSD(resumen.totalCobradoUSD)} ·{' '}
+                    {Math.floor(resumen.mesesTranscurridos)} meses transcurridos
+                    {resumen.pagosAtrasados > 0 &&
+                      ` · ${resumen.pagosAtrasados} pago(s) atrasado(s)`}
+                  </div>
                 </div>
-                <div className="result__usd">
-                  Cobrado hasta ahora: US$ {formatoUSD(resumen.totalCobradoUSD)}
+              ) : (
+                <div className="result result--empty" style={{ marginTop: 14 }}>
+                  <div className="result__label">Rentabilidad real hasta ahora</div>
+                  <div className="result__value">—</div>
+                  <div className="result__threshold">
+                    Necesitás al menos un mes de historial para calcular la
+                    rentabilidad real de forma confiable. Volvé a revisar esto
+                    más adelante.
+                  </div>
+                  <div className="result__usd">
+                    Cobrado hasta ahora: US$ {formatoUSD(resumen.totalCobradoUSD)}
+                  </div>
                 </div>
-              </div>
-            )
-          ) : (
-            <p className="dolar-meta" style={{ marginTop: 10 }}>
-              Cargá la fecha de inicio del alquiler (arriba de todo, en esta
-              misma vista) para activar el seguimiento de rentabilidad real.
-            </p>
+              )
+            ) : (
+              <p className="dolar-meta" style={{ marginTop: 10 }}>
+                Cargá la fecha de inicio del alquiler (arriba de todo, en esta
+                misma vista) para activar el seguimiento de rentabilidad real.
+              </p>
+            )}
+            </>
           )}
         </div>
       </div>

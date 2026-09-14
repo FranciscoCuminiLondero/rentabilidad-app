@@ -62,9 +62,8 @@ export default function App() {
   const { cotizaciones, estado, recargar } = useDolar();
   const valorAutomatico = cotizaciones?.[tipoDolar] ?? null;
   const { session, cargando: cargandoAuth, signOut } = useAuth();
-  const { suscripcion, plan, limitePropiedades } = useSubscription(
-    session?.user.id
-  );
+  const { suscripcion, plan, limitePropiedades, tieneSeguimientoPagos } =
+    useSubscription(session?.user.id);
   const { propiedades, guardar, actualizar, borrar } = useProperties(
     session?.user.id,
     limitePropiedades
@@ -542,12 +541,7 @@ export default function App() {
       {mostrarAyuda && <HelpModal onClose={() => setMostrarAyuda(false)} />}
 
       {mostrarPlanes && session && (
-        <PricingModal
-          userId={session.user.id}
-          email={session.user.email ?? ''}
-          planActual={plan}
-          onClose={() => setMostrarPlanes(false)}
-        />
+        <PricingModal planActual={plan} onClose={() => setMostrarPlanes(false)} />
       )}
 
       {propiedadDetalle && (
@@ -557,6 +551,8 @@ export default function App() {
           onGuardarFechaInicio={(fecha) =>
             actualizar(propiedadDetalle.id, { fecha_inicio_alquiler: fecha })
           }
+          tieneSeguimiento={tieneSeguimientoPagos}
+          onVerPlanes={() => setMostrarPlanes(true)}
         />
       )}
 
