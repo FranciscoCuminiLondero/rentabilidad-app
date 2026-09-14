@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
+import type { TipoDolar } from './useDolar';
 
 export interface Propiedad {
   id: string;
@@ -14,18 +15,24 @@ export interface Propiedad {
   // tienen cargados.
   fecha_inicio_alquiler: string | null;
   prevision_rentabilidad_anual: number | null;
+  // Tipo de cotización (oficial/blue/MEP/CCL) elegido para esta propiedad.
+  // Se usa también para buscar el dólar histórico de sus pagos, así el
+  // seguimiento queda consistente con la elección (ver useDolar.ts).
+  tipo_dolar: TipoDolar;
   created_at: string;
 }
 
 // `prevision_rentabilidad_anual` no lo tipea el usuario en un formulario: lo
 // completa quien llama a guardar/actualizar con la rentabilidadAnual ya
-// calculada (ver calc.ts) al momento de guardar. Ambos campos son opcionales
-// acá para no romper a quien todavía guarda propiedades sin esta info.
+// calculada (ver calc.ts) al momento de guardar. Es opcional acá (junto con
+// fecha_inicio_alquiler) para no romper a quien todavía guarda propiedades
+// sin esta info.
 interface DatosPropiedad {
   nombre: string;
   precio_compra: number;
   alquiler_mensual: number;
   dolar_venta: number;
+  tipo_dolar: TipoDolar;
   fecha_inicio_alquiler?: string | null;
   prevision_rentabilidad_anual?: number | null;
 }
