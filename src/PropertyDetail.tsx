@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useDolarHistorico } from './useDolarHistorico';
+import { NOMBRE_TIPO_DOLAR, useDolar } from './useDolar';
 import { usePagos, type EstadoPago, type PagoAlquiler } from './usePagos';
 import type { Propiedad } from './useProperties';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -47,7 +47,7 @@ export function PropertyDetail({
   onClose,
   onGuardarFechaInicio,
 }: PropertyDetailProps) {
-  const { buscarDolarOficial } = useDolarHistorico();
+  const { buscarDolarHistorico } = useDolar();
   const { pagos, registrarPago, actualizarPago, borrarPago, resumenAnual } =
     usePagos(propiedad.id);
 
@@ -87,7 +87,10 @@ export function PropertyDetail({
 
     let cancelado = false;
     setCargandoDolarDia(true);
-    buscarDolarOficial(fechaPago).then((valor) => {
+    // Siempre con el tipo de dólar elegido para esta propiedad (no uno
+    // distinto por pago), para que el historial quede consistente con esa
+    // elección (ver useProperties.ts).
+    buscarDolarHistorico(propiedad.tipo_dolar, fechaPago).then((valor) => {
       if (cancelado) return;
       if (valor != null) setDolarDiaTexto(numeroATexto(valor));
       setCargandoDolarDia(false);
@@ -96,7 +99,7 @@ export function PropertyDetail({
     return () => {
       cancelado = true;
     };
-  }, [fechaPago, buscarDolarOficial]);
+  }, [fechaPago, propiedad.tipo_dolar, buscarDolarHistorico]);
 
   async function handleGuardarFechaInicio() {
     setErrorFechaInicio(null);
@@ -142,7 +145,7 @@ export function PropertyDetail({
       // Mismo criterio que "Precio de compra" y "Alquiler mensual" en la
       // calculadora principal: un monto menor a 1000 se interpreta "en
       // miles". El dólar del día no se normaliza (tampoco lo hace el campo
-      // "Dólar oficial" de la calculadora).
+      // "Dólar · venta" de la calculadora).
       monto_ars: normalizarMonto(parseInput(montoArsTexto)),
       dolar_dia: parseInput(dolarDiaTexto),
       estado: estadoPago,
@@ -215,6 +218,10 @@ export function PropertyDetail({
           </p>
           <p className="dolar-meta">
             Inicio del alquiler: {propiedad.fecha_inicio_alquiler ?? 'no configurado'}
+          </p>
+          <p className="dolar-meta">
+            Cotización: dólar {NOMBRE_TIPO_DOLAR[propiedad.tipo_dolar].toLowerCase()}{' '}
+            (los pagos de esta propiedad usan esta misma referencia)
           </p>
 
           {!propiedad.fecha_inicio_alquiler &&
