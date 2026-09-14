@@ -1,9 +1,15 @@
 // Edge Function: crea una suscripción (preapproval) en Mercado Pago para
 // los planes pagos y devuelve el link de checkout (init_point) al que hay
 // que redirigir al usuario. No confirma el pago ni toca la tabla
-// subscriptions todavía — eso lo hace el webhook, que va en otro prompt.
+// subscriptions — eso lo hace mercadopago-webhook.
 //
-// POST body esperado: { plan: 'basico' | 'pro', email: string, user_id: string }
+// POST body esperado: { plan: 'basico' | 'pro' }
+// user_id y email NO se toman del body: se derivan del JWT de la request
+// (esta función requiere JWT válido, se deploya sin --no-verify-jwt). Si
+// se confiara en el body, cualquier usuario logueado podría mandar el
+// user_id de otra persona y generarle una suscripción a su cuenta.
+
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // --- Constantes fáciles de cambiar ---------------------------------------
 // Montos en ARS, cobro mensual recurrente. Ajustar según corresponda.
@@ -48,8 +54,6 @@ function esPlanValido(valor: unknown): valor is Plan {
 
 interface CrearSuscripcionBody {
   plan?: unknown;
-  email?: unknown;
-  user_id?: unknown;
 }
 
 interface RespuestaMercadoPago {
@@ -74,7 +78,7 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: 'Body inválido: se esperaba JSON.' }, 400);
   }
 
-  const { plan, email, user_id } = body;
+  const { plan } = body;
 
   if (!esPlanValido(plan)) {
     return jsonResponse(
@@ -82,12 +86,37 @@ Deno.serve(async (req: Request) => {
       400
     );
   }
-  if (typeof email !== 'string' || !email.trim()) {
-    return jsonResponse({ error: 'Falta el email del usuario.' }, 400);
+
+  // Identidad real del que llama, sacada del JWT (no del body). El gateway
+  // de Supabase ya verificó que el JWT es válido antes de invocar esta
+  // función; acá lo decodificamos para saber DE QUIÉN es.
+  const authHeader = req.headers.get('Authorization');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!authHeader || !supabaseUrl || !anonKey) {
+    return jsonResponse({ error: 'Falta autenticación.' }, 401);
   }
-  if (typeof user_id !== 'string' || !user_id.trim()) {
-    return jsonResponse({ error: 'Falta el user_id del usuario.' }, 400);
+
+  const supabaseClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const {
+    data: { user },
+    error: errorUsuario,
+  } = await supabaseClient.auth.getUser();
+
+  if (errorUsuario || !user) {
+    return jsonResponse({ error: 'Sesión inválida o expirada.' }, 401);
   }
+  if (!user.email) {
+    return jsonResponse(
+      { error: 'Tu cuenta no tiene un email asociado; no se puede suscribir.' },
+      400
+    );
+  }
+
+  const userId = user.id;
+  const email = user.email;
 
   const accessToken = Deno.env.get('MP_ACCESS_TOKEN');
   if (!accessToken) {
@@ -109,7 +138,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         reason: NOMBRE_PLAN[plan],
-        external_reference: user_id,
+        external_reference: userId,
         payer_email: email,
         back_url: BACK_URL,
         auto_recurring: {

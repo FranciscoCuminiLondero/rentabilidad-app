@@ -3,8 +3,6 @@ import { supabase } from './supabaseClient';
 import { NOMBRE_PLAN, type Plan } from './useSubscription';
 
 interface PricingModalProps {
-  userId: string;
-  email: string;
   planActual: Plan;
   onClose: () => void;
 }
@@ -52,24 +50,23 @@ async function extraerMensajeError(error: unknown): Promise<string> {
   return typeof mensaje === 'string' ? mensaje : generico;
 }
 
-export function PricingModal({ userId, email, planActual, onClose }: PricingModalProps) {
+export function PricingModal({ planActual, onClose }: PricingModalProps) {
   const [enviando, setEnviando] = useState<PlanPago | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleElegirPlan(plan: PlanPago) {
-    if (!email) {
-      setError('No pudimos detectar tu email. Iniciá sesión de nuevo e intentá otra vez.');
-      return;
-    }
-
     setError(null);
     setEnviando(plan);
 
+    // user_id/email no se mandan: crear-suscripcion los saca del JWT de la
+    // sesión (que supabase.functions.invoke adjunta solo). Mandarlos acá
+    // sería confiar en el cliente para algo que decide a quién se le activa
+    // el plan pago.
     const { data, error: errorInvoke } = await supabase.functions.invoke<{
       init_point?: string;
       error?: string;
     }>('crear-suscripcion', {
-      body: { plan, email, user_id: userId },
+      body: { plan },
     });
 
     if (errorInvoke) {
