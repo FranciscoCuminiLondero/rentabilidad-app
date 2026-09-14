@@ -8,13 +8,30 @@
 // (esta función requiere JWT válido, se deploya sin --no-verify-jwt). Si
 // se confiara en el body, cualquier usuario logueado podría mandar el
 // user_id de otra persona y generarle una suscripción a su cuenta.
+//
+// Precio en USD, cobrado en ARS: Mercado Pago Argentina solo permite
+// currency_id 'ARS' en /preapproval, así que el precio "real" se define en
+// USD acá abajo y se convierte a ARS con la cotización oficial del día en
+// que cada usuario se suscribe. Esto evita tener que estar actualizando un
+// número fijo en pesos por la inflación.
+//
+// OJO: esto solo fija el precio correcto para suscripciones NUEVAS. Una vez
+// creado un preapproval, Mercado Pago cobra ese mismo monto en ARS todos los
+// meses — no se reajusta solo. Para reajustar a los que ya están
+// suscriptos hace falta actualizar cada preapproval existente con
+// PUT /preapproval/{id} (auto_recurring.transaction_amount), por ejemplo
+// desde un cron mensual aparte. No implementado todavía.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // --- Constantes fáciles de cambiar ---------------------------------------
-// Montos en ARS, cobro mensual recurrente. Ajustar según corresponda.
-const PRECIO_BASICO_ARS = 4999;
-const PRECIO_PRO_ARS = 9999;
+const PRECIO_BASICO_USD = 3;
+const PRECIO_PRO_USD = 7;
+
+// Recargo sobre el precio en USD ya convertido a ARS, para cubrir impuestos
+// propios (ej: 0.21 si sos Responsable Inscripto y facturás con IVA
+// discriminado). En 0 por ahora: ajustar según tu situación fiscal.
+const PORCENTAJE_RECARGO_IMPUESTOS = 0;
 
 // Días de prueba gratis antes del primer cobro para usuarios nuevos.
 const DIAS_PRUEBA_GRATIS = 7;
@@ -25,15 +42,39 @@ const BACK_URL = 'https://rentabilidad-app-web.vercel.app/';
 
 type Plan = 'basico' | 'pro';
 
-const MONTO_POR_PLAN: Record<Plan, number> = {
-  basico: PRECIO_BASICO_ARS,
-  pro: PRECIO_PRO_ARS,
+const PRECIO_USD_POR_PLAN: Record<Plan, number> = {
+  basico: PRECIO_BASICO_USD,
+  pro: PRECIO_PRO_USD,
 };
 
 const NOMBRE_PLAN: Record<Plan, string> = {
   basico: 'Plan Básico - Rentabilidad de alquiler',
   pro: 'Plan Pro - Rentabilidad de alquiler',
 };
+
+// Misma fuente que usa el frontend (ver src/useDolar.ts), pero no se puede
+// compartir el módulo entre el bundle de Vite y esta función Deno: se
+// duplica acá la llamada puntual que hace falta (solo "oficial", que es la
+// referencia correcta para fijar un precio de venta, no blue/MEP/CCL).
+async function obtenerDolarOficialVenta(): Promise<number> {
+  const respuesta = await fetch('https://dolarapi.com/v1/dolares/oficial');
+  if (!respuesta.ok) {
+    throw new Error(`dolarapi.com respondió con status ${respuesta.status}`);
+  }
+  const datos = (await respuesta.json()) as { venta?: number };
+  if (typeof datos.venta !== 'number') {
+    throw new Error('dolarapi.com no devolvió un valor de venta válido.');
+  }
+  return datos.venta;
+}
+
+function calcularMontoARS(precioUSD: number, dolarVenta: number): number {
+  const montoBase = precioUSD * dolarVenta;
+  const montoConImpuestos = montoBase * (1 + PORCENTAJE_RECARGO_IMPUESTOS);
+  // Redondeado a pesos enteros: Mercado Pago no necesita más precisión que
+  // esa para un monto en ARS.
+  return Math.round(montoConImpuestos);
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -129,6 +170,23 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  let dolarVenta: number;
+  try {
+    dolarVenta = await obtenerDolarOficialVenta();
+  } catch (err) {
+    const mensaje = err instanceof Error ? err.message : 'Error desconocido.';
+    // No se cobra con un precio "adivinado" o desactualizado: si no hay
+    // cotización, se corta acá en vez de arriesgar un monto mal calculado.
+    return jsonResponse(
+      {
+        error: `No se pudo obtener la cotización del dólar para calcular el precio (${mensaje}). Probá de nuevo en un momento.`,
+      },
+      502
+    );
+  }
+
+  const montoARS = calcularMontoARS(PRECIO_USD_POR_PLAN[plan], dolarVenta);
+
   try {
     const respuestaMP = await fetch('https://api.mercadopago.com/preapproval', {
       method: 'POST',
@@ -144,7 +202,7 @@ Deno.serve(async (req: Request) => {
         auto_recurring: {
           frequency: 1,
           frequency_type: 'months',
-          transaction_amount: MONTO_POR_PLAN[plan],
+          transaction_amount: montoARS,
           currency_id: 'ARS',
           free_trial: {
             frequency: DIAS_PRUEBA_GRATIS,
