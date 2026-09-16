@@ -20,6 +20,15 @@ const TOLERANCIA_MS = MS_POR_DIA;
 
 const TIPOS_PREAPPROVAL = new Set(['preapproval', 'subscription_preapproval']);
 
+// Los preapproval_id reales de Mercado Pago son un hex de 32 caracteres
+// (ej. "0b2f72632c06400abfb26c53186f7ddd"). Este endpoint no tiene JWT
+// (lo llama Mercado Pago, no un usuario logueado), así que preapprovalId
+// viene de un request sin autenticar: valido el formato antes de meterlo
+// en la URL que consultamos con nuestro propio access token, para que no
+// se pueda usar esta ruta para pedirle a la API de MP algo que no sea
+// "traeme este preapproval puntual".
+const PREAPPROVAL_ID_VALIDO = /^[a-f0-9]{32}$/i;
+
 type Plan = 'basico' | 'pro';
 type StatusInterno = 'trialing' | 'active' | 'cancelled' | 'past_due';
 
@@ -144,6 +153,11 @@ Deno.serve(async (req: Request) => {
 
     if (!preapprovalId) {
       console.error('Webhook de preapproval sin id (ni en body ni en query).');
+      return jsonResponse({ ok: true }, 200);
+    }
+
+    if (!PREAPPROVAL_ID_VALIDO.test(preapprovalId)) {
+      console.error(`Webhook con preapprovalId con formato inválido: "${preapprovalId}".`);
       return jsonResponse({ ok: true }, 200);
     }
 
