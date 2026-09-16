@@ -105,6 +105,17 @@ export function HelpModal({ onClose }: HelpModalProps) {
           </div>
 
           <div className="help-section">
+            <p className="help-section__title">Cancelar tu suscripción</p>
+            <p className="help-section__text">
+              Entrá a Mercado Pago con la cuenta con la que te suscribiste →
+              Tu perfil → Suscripciones, y cancelala ahí. Si cancelás antes
+              de que termine la prueba gratis de 7 días, no se te cobra
+              nada. Al cancelar, tu cuenta vuelve a las 2 propiedades y sin
+              seguimiento de pagos del plan Free.
+            </p>
+          </div>
+
+          <div className="help-section">
             <p className="help-section__title">
               Editar o borrar una propiedad guardada
             </p>

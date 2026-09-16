@@ -159,6 +159,12 @@ export function PricingModal({ planActual, onClose }: PricingModalProps) {
           ))}
 
           {error && <p className="dolar-meta dolar-meta--error">{error}</p>}
+
+          <p className="footer-note" style={{ marginTop: 14 }}>
+            Podés cancelar cuando quieras desde Mercado Pago (Tu perfil →
+            Suscripciones). Si cancelás antes de que termine la prueba
+            gratis, no se te cobra nada.
+          </p>
         </div>
       </div>
     </div>
