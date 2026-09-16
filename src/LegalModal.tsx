@@ -4,10 +4,11 @@ interface LegalModalProps {
   onClose: () => void;
 }
 
-// Borrador razonable para un lanzamiento MVP, no es asesoramiento legal
-// profesional. Antes de escalar en serio (más usuarios, más plata en
-// juego), conviene que un abogado lo revise — sobre todo la parte de
-// facturación/AFIP, que depende de tu situación impositiva real.
+// El contenido real vive en public/legal/terminos.html y
+// public/legal/privacidad.html (páginas estáticas, para poder linkearlas
+// directo desde afuera de la app — ej. la pantalla de consentimiento OAuth
+// de Google pide una URL, no algo dentro de un modal de una SPA). Este
+// modal solo lleva ahí, para no duplicar el texto en dos lugares.
 export function LegalModal({ onClose }: LegalModalProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -31,77 +32,37 @@ export function LegalModal({ onClose }: LegalModalProps) {
           </div>
 
           <div className="help-section">
-            <p className="help-section__title">El servicio</p>
+            <p className="help-section__title">Condiciones del Servicio</p>
             <p className="help-section__text">
-              Rentabilidad de alquiler es una herramienta para estimar si
-              conviene comprar una propiedad para alquilarla, y hacer
-              seguimiento de los pagos reales. Los cálculos son orientativos:
-              no constituyen asesoramiento financiero ni garantizan ningún
-              resultado de inversión.
+              Qué es la app, cómo funcionan los planes pagos, cancelación y
+              reembolsos.
             </p>
+            <a
+              href="/legal/terminos.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-btn"
+              style={{ marginTop: 6, display: 'inline-block' }}
+            >
+              Ver Condiciones del Servicio ↗
+            </a>
           </div>
 
           <div className="help-section">
-            <p className="help-section__title">Cuenta y planes</p>
+            <p className="help-section__title">Política de Privacidad</p>
             <p className="help-section__text">
-              La calculadora se puede usar sin crear cuenta. Crear una cuenta
-              es necesario solo para guardar propiedades y usar el
-              seguimiento de pagos. Existen un plan gratuito y dos planes
-              pagos (Básico y Pro), con 7 días de prueba gratis antes del
-              primer cobro. El precio de los planes pagos está fijado en
-              dólares y se cobra en pesos al tipo de cambio oficial del día
-              en que te suscribís.
+              Qué datos guardamos, con quién los compartimos, y cómo ejercer
+              tus derechos sobre ellos.
             </p>
-          </div>
-
-          <div className="help-section">
-            <p className="help-section__title">Pagos y cobros</p>
-            <p className="help-section__text">
-              Los cobros de los planes pagos los procesa Mercado Pago. No
-              accedemos ni guardamos los datos de tu tarjeta o cuenta
-              bancaria — eso queda a cargo de Mercado Pago bajo sus propios
-              términos. El cobro es mensual y automático hasta que
-              cancelés la suscripción.
-            </p>
-          </div>
-
-          <div className="help-section">
-            <p className="help-section__title">Cancelación y reembolsos</p>
-            <p className="help-section__text">
-              Podés cancelar tu suscripción en cualquier momento desde
-              Mercado Pago (Tu perfil → Suscripciones). Si cancelás antes de
-              que termine la prueba gratis de 7 días, no se te cobra nada.
-              Una vez efectuado un cobro, no se reintegra de forma
-              automática por el período ya iniciado; escribinos si tenés un
-              caso puntual.
-            </p>
-          </div>
-
-          <div className="help-section">
-            <p className="help-section__title">Tus datos</p>
-            <p className="help-section__text">
-              Guardamos tu email y los datos de las propiedades/pagos que
-              cargues, para que la app funcione. Cada usuario solo puede ver
-              sus propios datos (protegido a nivel de base de datos). No
-              vendemos ni compartimos tus datos con terceros, salvo lo
-              estrictamente necesario para procesar los pagos (Mercado
-              Pago).
-            </p>
-            <p className="help-section__text" style={{ marginTop: 6 }}>
-              De acuerdo a la Ley 25.326 de Protección de Datos Personales,
-              podés pedirnos acceder, corregir o borrar tus datos en
-              cualquier momento. Borrar tu cuenta borra también todas tus
-              propiedades y el historial de pagos asociado, de forma
-              irreversible.
-            </p>
-          </div>
-
-          <div className="help-section">
-            <p className="help-section__title">Cambios</p>
-            <p className="help-section__text">
-              Podemos actualizar estos términos con el tiempo. Los cambios
-              importantes se van a avisar dentro de la app.
-            </p>
+            <a
+              href="/legal/privacidad.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link-btn"
+              style={{ marginTop: 6, display: 'inline-block' }}
+            >
+              Ver Política de Privacidad ↗
+            </a>
           </div>
 
           <div className="help-section">
