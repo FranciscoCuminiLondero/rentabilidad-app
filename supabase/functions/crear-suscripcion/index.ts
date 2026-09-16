@@ -76,13 +76,29 @@ function calcularMontoARS(precioUSD: number, dolarVenta: number): number {
   return Math.round(montoConImpuestos);
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+// Esta función ya exige un JWT válido, así que un origen cualquiera no
+// puede hacer nada sin el token de sesión de un usuario real (CORS no es
+// la barrera principal acá). Igual se restringe a los orígenes conocidos
+// como buena práctica: nuestro dominio de producción y localhost para
+// seguir probando en desarrollo.
+const ORIGEN_PRODUCCION = 'https://rentabilidad-app-web.vercel.app';
+const ORIGEN_LOCAL = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
-function jsonResponse(body: unknown, status: number): Response {
+function corsHeadersPara(origin: string | null): Record<string, string> {
+  const permitido =
+    origin != null && (origin === ORIGEN_PRODUCCION || ORIGEN_LOCAL.test(origin));
+  return {
+    'Access-Control-Allow-Origin': permitido ? origin! : ORIGEN_PRODUCCION,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
+
+function jsonResponse(
+  body: unknown,
+  status: number,
+  corsHeaders: Record<string, string>
+): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -104,19 +120,21 @@ interface RespuestaMercadoPago {
 }
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = corsHeadersPara(req.headers.get('Origin'));
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return jsonResponse({ error: 'Método no permitido, usá POST.' }, 405);
+    return jsonResponse({ error: 'Método no permitido, usá POST.' }, 405, corsHeaders);
   }
 
   let body: CrearSuscripcionBody;
   try {
     body = await req.json();
   } catch {
-    return jsonResponse({ error: 'Body inválido: se esperaba JSON.' }, 400);
+    return jsonResponse({ error: 'Body inválido: se esperaba JSON.' }, 400, corsHeaders);
   }
 
   const { plan } = body;
@@ -124,7 +142,8 @@ Deno.serve(async (req: Request) => {
   if (!esPlanValido(plan)) {
     return jsonResponse(
       { error: 'El plan debe ser "basico" o "pro".' },
-      400
+      400,
+      corsHeaders
     );
   }
 
@@ -135,7 +154,7 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
   if (!authHeader || !supabaseUrl || !anonKey) {
-    return jsonResponse({ error: 'Falta autenticación.' }, 401);
+    return jsonResponse({ error: 'Falta autenticación.' }, 401, corsHeaders);
   }
 
   const supabaseClient = createClient(supabaseUrl, anonKey, {
@@ -147,12 +166,13 @@ Deno.serve(async (req: Request) => {
   } = await supabaseClient.auth.getUser();
 
   if (errorUsuario || !user) {
-    return jsonResponse({ error: 'Sesión inválida o expirada.' }, 401);
+    return jsonResponse({ error: 'Sesión inválida o expirada.' }, 401, corsHeaders);
   }
   if (!user.email) {
     return jsonResponse(
       { error: 'Tu cuenta no tiene un email asociado; no se puede suscribir.' },
-      400
+      400,
+      corsHeaders
     );
   }
 
@@ -166,7 +186,8 @@ Deno.serve(async (req: Request) => {
         error:
           'Falta configurar el secreto MP_ACCESS_TOKEN en las Edge Functions del proyecto.',
       },
-      500
+      500,
+      corsHeaders
     );
   }
 
@@ -181,7 +202,8 @@ Deno.serve(async (req: Request) => {
       {
         error: `No se pudo obtener la cotización del dólar para calcular el precio (${mensaje}). Probá de nuevo en un momento.`,
       },
-      502
+      502,
+      corsHeaders
     );
   }
 
@@ -221,7 +243,8 @@ Deno.serve(async (req: Request) => {
         `Mercado Pago respondió con status ${respuestaMP.status}.`;
       return jsonResponse(
         { error: `No se pudo crear la suscripción: ${mensaje}` },
-        respuestaMP.status
+        respuestaMP.status,
+        corsHeaders
       );
     }
 
@@ -231,16 +254,18 @@ Deno.serve(async (req: Request) => {
           error:
             'Mercado Pago no devolvió un link de checkout (init_point) para esta suscripción.',
         },
-        502
+        502,
+        corsHeaders
       );
     }
 
-    return jsonResponse({ init_point: datosMP.init_point }, 200);
+    return jsonResponse({ init_point: datosMP.init_point }, 200, corsHeaders);
   } catch (err) {
     const mensaje = err instanceof Error ? err.message : 'Error desconocido.';
     return jsonResponse(
       { error: `No se pudo conectar con Mercado Pago: ${mensaje}` },
-      502
+      502,
+      corsHeaders
     );
   }
 });
