@@ -107,9 +107,8 @@ export function LegalModal({ onClose }: LegalModalProps) {
           <div className="help-section">
             <p className="help-section__title">Contacto</p>
             <p className="help-section__text">
-              {/* TODO: reemplazar por un email de soporte real antes de lanzar. */}
               Dudas, reclamos o pedidos sobre tus datos: escribinos a
-              soporte@tu-dominio.com.
+              volksoftwares@gmail.com.
             </p>
           </div>
         </div>
