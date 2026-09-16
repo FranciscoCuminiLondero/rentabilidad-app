@@ -9,6 +9,7 @@ import {
 import { useAuth } from './useAuth';
 import { AuthForm } from './AuthForm';
 import { HelpModal } from './HelpModal';
+import { LegalModal } from './LegalModal';
 import { PropertyDetail } from './PropertyDetail';
 import { ConfirmDialog } from './ConfirmDialog';
 import { PricingModal } from './PricingModal';
@@ -47,6 +48,7 @@ export default function App() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [mostrarAuthForm, setMostrarAuthForm] = useState(false);
   const [mostrarAyuda, setMostrarAyuda] = useState(false);
+  const [mostrarLegal, setMostrarLegal] = useState(false);
   const [mostrarPlanes, setMostrarPlanes] = useState(false);
   const [propiedadDetalleId, setPropiedadDetalleId] = useState<string | null>(
     null
@@ -371,6 +373,16 @@ export default function App() {
           valor distinto.
         </p>
 
+        <p className="footer-note" style={{ marginTop: 6 }}>
+          <button
+            type="button"
+            className="link-btn"
+            onClick={() => setMostrarLegal(true)}
+          >
+            Términos y Privacidad
+          </button>
+        </p>
+
         <div className="divider" />
 
         {cargandoAuth ? null : session ? (
@@ -539,6 +551,8 @@ export default function App() {
       )}
 
       {mostrarAyuda && <HelpModal onClose={() => setMostrarAyuda(false)} />}
+
+      {mostrarLegal && <LegalModal onClose={() => setMostrarLegal(false)} />}
 
       {mostrarPlanes && session && (
         <PricingModal planActual={plan} onClose={() => setMostrarPlanes(false)} />
